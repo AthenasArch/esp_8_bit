@@ -1,3 +1,40 @@
+### New updates for the 8-bit game, based on [esp_8_bit](https://github.com/CornN64/esp_8_bit)
+
+### :wolf: Jean Mappelli and Leonardo Hilgemberg - AthenasArch.
+
+## Aos Brasileiros, essa é a nossa contribuição para o projeto, espero que gostem. Obrigado ao Jean Mappelli por encontrar e fazer funcionar esse repositório.
+
+### Update: thanks to Jean, this software works with PS4 dualshock controllers, just plug in the controller and sync.
+### Problem: It was possible to make the software work only with parallel dualshock controllers.
+
+<!-- Video de porque começar com jogos -->
+### Abaixo o video do game funcionando:
+<div>
+<a href="https://youtube.com/shorts/-sd5s2cAW6g?si=VgbiwYTWRdyE_V7K" target="_blank"><img width="20%" src="https://github.com/AthenasArch/ESP32-Game-8-Bit-DualShock-4/blob/12f2fd0dace4766943139a31f8d0addc9ca58f0d/img/Castanho%20Claro%20e%20Cinza%20Minimalismo%20Fa%C3%A7a-Voc%C3%AA-Mesmo%20Influencer%20Destaque%20do%20Instagram%20Conjunto%20de%20Capa%20(1).png" target="_blank"></a>
+</div>
+
+<details>
+	<summary><h3>👨‍💻 updates to the project </h3></summary>
+	
+### Firmware
+- [X] Fazer o game funcionar no ESP32-Wroom.
+- [X] Colocar para funcionar em uma TV via Canal AV (Testar audio e Video).
+- [X] Adicionar jogos via Flash e jogar os jogos.
+- [X] Rodar o cartão SD.
+- [X] Rodar jogos via cartão SD.
+- [X] Implementar um controle de PS4 - DualShock 4.
+- [X] Implementar um display Touch e executar as imagens do jogo nele.
+- [X] Testar NES - 
+- [ ] Testar SMS - Sega Master System.
+- [ ] Testar Atari.
+</details>
+
+## Important: This software only works with version 1.0.4 to 1.0.6 of ESP32. In other words, it only works with old versions, updates will need to be made to work with new versions:
+just put this here in "Additional boards manager URLs:": 
+- https://dl.espressif.com/dl/package_esp32_index.json
+<a>
+<img src="https://github.com/AthenasArch/ESP32-Game-8-Bit-DualShock-4/blob/4776dced1405e630a251d259b0d46bf6b5c4e90f/img/Arduino2.0-ESP32-V1.0.4%20to%20V1.0.6.jpg" alt="android" width="1000" height="600"/> </a> 
+</a>
 # **ESP_8_BIT:** Atari 8 bit computers, NES and SMS game consoles on your TV with nothing more than a ESP32 and a sense of nostalgia
 ## Supports NTSC/PAL color composite video output, Bluetooth Classic or IR keyboards and joysticks; just the thing when we could all use a little distraction. This version also adds support for classic NES or SNES (one or two) controllers hardwired to the ESP32. Use SELECT + LEFT to access file menu and SELECT + START -> reset. There is also SD card support with FAT 8.3 filenames.
 
