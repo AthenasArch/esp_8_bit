@@ -537,6 +537,7 @@ public:
     string _path;
     vector<string> _files;
     vector<string> _info;
+    uint8_t statusDoControle;
     int _disks[2];
     int _tab_hilited[3];
     int _tab_scroll[3];
@@ -995,10 +996,15 @@ Overlay _overlay;
 GUI _gui;
 void gui_start(Emu* emu, const char* path)
 {
+    _gui.statusDoControle = 0;
     _gui._emu = emu;
     _gui._overlay = &_overlay;
     _gui.insert_default(path);
     _overlay.init(emu->video_buffer(),emu->width,emu->height,emu->flavor);
+}
+
+uint8_t gui_getStatusControle(){
+    return _gui.statusDoControle;
 }
 
 void gui_update()
@@ -1049,6 +1055,214 @@ static void keyboard(const uint8_t* d, int len)
     }
 }
 
+
+
+
+typedef struct {
+  uint8_t right : 1;
+  uint8_t down : 1;
+  uint8_t up : 1;
+  uint8_t left : 1;
+
+  uint8_t square : 1;
+  uint8_t cross : 1;
+  uint8_t circle : 1;
+  uint8_t triangle : 1;
+
+  uint8_t upright : 1;
+  uint8_t downright : 1;
+  uint8_t upleft : 1;
+  uint8_t downleft : 1;
+
+  uint8_t l1 : 1;
+  uint8_t r1 : 1;
+  uint8_t l2 : 1;
+  uint8_t r2 : 1;
+
+  uint8_t share : 1;
+  uint8_t options : 1;
+  uint8_t l3 : 1;
+  uint8_t r3 : 1;
+
+  uint8_t ps : 1;
+  uint8_t touchpad : 1;
+} ps4_button_t;
+
+enum ps4_packet_index {
+  packet_index_analog_stick_lx = 2,
+  packet_index_analog_stick_ly = 3,
+  packet_index_analog_stick_rx = 4,
+  packet_index_analog_stick_ry = 5,
+
+  packet_index_button_standard = 6,
+  packet_index_button_extra = 7,
+  packet_index_button_ps = 8,
+
+  packet_index_analog_l2 = 9,
+  packet_index_analog_r2 = 10,
+
+  packet_index_status = 42
+};
+
+enum ps4_button_mask {
+  button_mask_up = 0,
+  button_mask_right = 0b00000010,
+  button_mask_down = 0b00000100,
+  button_mask_left = 0b00000110,
+
+  button_mask_upright = 0b00000001,
+  button_mask_downright = 0b00000011,
+  button_mask_upleft = 0b00000111,
+  button_mask_downleft = 0b00000101,
+
+  button_mask_direction = 0b00001111,
+
+  button_mask_square = 0b00010000,
+  button_mask_cross = 0b00100000,
+  button_mask_circle = 0b01000000,
+  button_mask_triangle = 0b10000000,
+
+  button_mask_l1 = 0b00000001,
+  button_mask_r1 = 0b00000010,
+  button_mask_l2 = 0b00000100,
+  button_mask_r2 = 0b00001000,
+
+  button_mask_share = 0b00010000,
+  button_mask_options = 0b00100000,
+
+  button_mask_l3 = 0b01000000,
+  button_mask_r3 = 0b10000000,
+
+  button_mask_ps = 0b01,
+  button_mask_touchpad = 0b10
+};
+
+ps4_button_t parsePacketButtons(const uint8_t* packet) {
+  ps4_button_t ps4_button;
+  uint8_t frontBtnData = packet[packet_index_button_standard];
+  uint8_t extraBtnData = packet[packet_index_button_extra];
+  uint8_t psBtnData = packet[packet_index_button_ps];
+  uint8_t directionBtnsOnly = button_mask_direction & frontBtnData;
+
+  ps4_button.up = directionBtnsOnly == button_mask_up;
+  ps4_button.right = directionBtnsOnly == button_mask_right;
+  ps4_button.down = directionBtnsOnly == button_mask_down;
+  ps4_button.left = directionBtnsOnly == button_mask_left;
+
+  ps4_button.upright = directionBtnsOnly == button_mask_upright;
+  ps4_button.upleft = directionBtnsOnly == button_mask_upleft;
+  ps4_button.downright = directionBtnsOnly == button_mask_downright;
+  ps4_button.downleft = directionBtnsOnly == button_mask_downleft;
+
+  ps4_button.triangle = (frontBtnData & button_mask_triangle) ? true : false;
+  ps4_button.circle = (frontBtnData & button_mask_circle) ? true : false;
+  ps4_button.cross = (frontBtnData & button_mask_cross) ? true : false;
+  ps4_button.square = (frontBtnData & button_mask_square) ? true : false;
+
+  ps4_button.l1 = (extraBtnData & button_mask_l1) ? true : false;
+  ps4_button.r1 = (extraBtnData & button_mask_r1) ? true : false;
+  ps4_button.l2 = (extraBtnData & button_mask_l2) ? true : false;
+  ps4_button.r2 = (extraBtnData & button_mask_r2) ? true : false;
+
+  ps4_button.share = (extraBtnData & button_mask_share) ? true : false;
+  ps4_button.options = (extraBtnData & button_mask_options) ? true : false;
+  ps4_button.l3 = (extraBtnData & button_mask_l3) ? true : false;
+  ps4_button.r3 = (extraBtnData & button_mask_r3) ? true : false;
+
+  ps4_button.ps = (psBtnData & button_mask_ps) ? true : false;
+  ps4_button.touchpad = (psBtnData & button_mask_touchpad) ? true : false;
+
+  return ps4_button;
+}
+
+static void PS4(const uint8_t* d, int len)
+{
+    
+    static ps4_button_t last_status_ps4;
+    ps4_button_t ps4 = parsePacketButtons(d);
+
+    _gui.statusDoControle = 1;
+
+    // Verificar o estado de cada botão
+    if ( ps4.up && !last_status_ps4.up) {
+        // printf("Botão 1 pressionado\r\n");
+        gui_key(82, 1, 0);
+    } else if ( !ps4.up && last_status_ps4.up){
+        // printf("Botão 1 Liberado\r\n");
+        gui_key(82, 0, 0);
+    }
+    if ( ps4.down && !last_status_ps4.down) {
+        // printf("Botão 2 pressionado\r\n");
+        gui_key(81, 1, 0);
+    } else if ( !ps4.down && last_status_ps4.down){
+        // printf("Botão 2 Liberado\r\n");
+        gui_key(81, 0, 0);
+    }
+    if ( ps4.left && !last_status_ps4.left) {
+        // printf("Botão 3 pressionado\r\n");
+        gui_key(80, 1, 0);
+    } else if ( !ps4.left && last_status_ps4.left){
+        // printf("Botão 3 Liberado\r\n");
+        gui_key(80, 0, 0); // Left
+    }
+    if ( ps4.right && !last_status_ps4.right) {
+        // printf("Botão 4 pressionado\r\n");
+        gui_key(79, 1, 0);
+    } else if ( !ps4.right && last_status_ps4.right){
+        // printf("Botão 4 Liberado\r\n");
+        gui_key(79, 0, 0);
+    }
+    if ( ps4.touchpad && !last_status_ps4.touchpad) {
+        // printf("Botão touch pressionado\r\n");
+        gui_key(58, 1, 0);
+    } else if ( !ps4.touchpad && last_status_ps4.touchpad){
+        // printf("Botão touch Liberado\r\n");
+    }
+    
+    // Verificar o estado de cada botão
+    if ( ps4.cross && !last_status_ps4.cross) {
+        // printf("Botão cross pressionado\r\n");
+        gui_key(225, 1, 0);
+    } else if ( !ps4.cross && last_status_ps4.cross){
+        // printf("Botão cross Liberado\r\n");
+        gui_key(225, 0, 0);
+    }
+    if ( ps4.square && !last_status_ps4.square) {
+        // printf("Botão square pressionado\r\n");
+        gui_key(226, 1, 0);
+    } else if ( !ps4.square && last_status_ps4.square){
+        // printf("Botão square Liberado\r\n");
+        gui_key(226, 0, 0); // B
+    }
+    if ( ps4.circle && !last_status_ps4.circle) {
+        // printf("Botão circle pressionado\r\n");
+    } else if ( !ps4.circle && last_status_ps4.circle){
+        // printf("Botão circle Liberado\r\n");
+    }
+    if ( ps4.triangle && !last_status_ps4.triangle) {
+        // printf("Botão triangle pressionado\r\n");
+    } else if ( !ps4.triangle && last_status_ps4.triangle){
+        // printf("Botão triangle Liberado\r\n");
+    }
+    
+    if ( ps4.share && !last_status_ps4.share) {
+        // printf("Botão share pressionado\r\n");
+        gui_key(43, 1, 0);
+    } else if ( !ps4.share && last_status_ps4.share){
+        // printf("Botão share Liberado\r\n");
+        gui_key(43, 0, 0);
+    }
+    if ( ps4.options && !last_status_ps4.options) {
+        // printf("Botão options pressionado\r\n");
+        gui_key(40, 1, 0);
+    } else if ( !ps4.options && last_status_ps4.options){
+        // printf("Botão options Liberado\r\n");
+        gui_key(40, 0, 0);
+    }
+    
+    memcpy(&last_status_ps4, &ps4, sizeof(ps4_button_t));
+}
+
 // Handle WII/IR controllers for operating GUI
 static int _last_pad = 0;
 static void pad_key(int mask, int state, int key)
@@ -1085,15 +1299,18 @@ static void ir(const uint8_t* j, int len)
 
 void gui_hid(const uint8_t* hid, int len)  // Parse HID event
 {
+    // printf("Entrou aqui\n");
     if (hid[0] != 0xA1)
         return;
-    /*
-    for (int i = 0; i < len; i++)
-        printf("%02X",hid[i]);
-    printf("\n");
-    */
+    
+    // printf("gui_hid\n");
+    // for (int i = 0; i < len; i++)
+    //     printf("%02X",hid[i]);
+    // printf("\n");
+    
     switch (hid[1]) {
-        case 0x01: keyboard(hid+1,len-1);   break;   // parse keyboard and maintain 1 key state
+        case 0x01: PS4(hid,len);   break;   // parse keyboard and maintain 1 key state
+        // case 0x01: keyboard(hid+1,len-1);   break;   // parse keyboard and maintain 1 key state
         case 0x32: wii();                   break;   // parse wii stuff: generic?
         case 0x42: ir(hid+2,len);           break;   // ir joy
     }
